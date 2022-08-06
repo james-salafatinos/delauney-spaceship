@@ -8,6 +8,14 @@ import { NoClipControls } from "/utils/NoClipControls.js";
 import { PhysicsObject } from "/utils/PhysicsObject.js";
 import { DelaunayGenerator } from "/utils/DelaunayGenerator.js";
 import { ProjectileGenerator } from "/utils/ProjectileGenerator.js";
+
+//Effects
+import { EffectComposer } from "/modules/EffectComposer.js";
+import { RenderPass } from "/modules/RenderPass.js";
+import { AfterimagePass } from "/modules/AfterimagePass.js";
+
+import { GUI } from "/modules/dat.gui.module.js";
+
 //THREE JS
 let camera, scene, renderer, composer, controls;
 let stats;
@@ -27,7 +35,14 @@ let time = performance.now();
 let worldOctree;
 let octreeObjects = new THREE.Group();
 
+let afterimagePass;
+
+const params = {
+  enable: true,
+};
+
 init();
+createGUI();
 animate();
 
 function init() {
@@ -210,6 +225,19 @@ function init() {
 
   PG = new ProjectileGenerator(scene, camera, window, worldOctree);
   console.log(PG);
+
+  //Effects
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+
+  afterimagePass = new AfterimagePass();
+  composer.addPass(afterimagePass);
+}
+
+function createGUI() {
+  const gui = new GUI({ name: "Damp setting" });
+  gui.add(afterimagePass.uniforms["damp"], "value", 0, 1).step(0.001);
+  gui.add(params, "enable");
 }
 
 function animate() {
@@ -250,7 +278,12 @@ function animate() {
 
   time = performance.now();
   controls.update(time, prevTime);
-  renderer.render(scene, camera);
+  //   renderer.render(scene, camera);
+  if (params.enable) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
   stats.update();
   frameIndex += 1;
 
